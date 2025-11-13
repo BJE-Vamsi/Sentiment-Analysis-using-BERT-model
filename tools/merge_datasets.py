@@ -17,6 +17,7 @@ import subprocess
 import sys
 from collections import defaultdict
 from pathlib import Path
+from typing import Dict, List, Tuple
 
 
 # Configuration: branches and their CSV files
@@ -48,7 +49,7 @@ def get_file_from_branch(branch: str, filepath: str) -> str:
         return ""
 
 
-def parse_csv_content(content: str, source_name: str) -> tuple[list[tuple[str, int]], dict]:
+def parse_csv_content(content: str, source_name: str) -> Tuple[List[Tuple[str, int]], Dict]:
     """
     Parse CSV content and return valid rows and statistics.
     
@@ -125,7 +126,7 @@ def get_row_hash(review: str, label: int) -> str:
     return hashlib.sha256(row_str.encode('utf-8')).hexdigest()
 
 
-def merge_datasets() -> dict:
+def merge_datasets() -> Dict:
     """
     Merge all datasets and return summary statistics.
     
@@ -283,7 +284,7 @@ def validate_output(filepath: Path):
         print(f"  ✗ Validation failed: {e}")
 
 
-def print_summary(summary: dict):
+def print_summary(summary: Dict):
     """Print summary report."""
     print("=" * 70)
     print("MERGE SUMMARY REPORT")
