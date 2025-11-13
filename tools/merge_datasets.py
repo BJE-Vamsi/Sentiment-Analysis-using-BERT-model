@@ -30,6 +30,7 @@ SOURCES = [
 HEADER = "Reviews,Labels"
 OUTPUT_FILE = "sentiment_final.csv"
 VALID_LABELS = {0, 1, 2, 3, 4, 5}
+LINE_TERMINATOR = '\n'  # LF line endings for Unix-style output
 
 
 def get_file_from_branch(branch: str, filepath: str) -> str:
@@ -114,9 +115,13 @@ def parse_csv_content(content: str, source_name: str) -> tuple[list[tuple[str, i
 
 
 def get_row_hash(review: str, label: int) -> str:
-    """Generate hash for a row to detect duplicates."""
-    # Use the exact CSV representation for deduplication
-    row_str = f'"{review}",{label}'
+    """Generate hash for a row to detect duplicates.
+    
+    Uses the parsed values (review text + label) for deduplication.
+    This ensures that rows with the same semantic content are treated
+    as duplicates, regardless of CSV quoting differences.
+    """
+    row_str = f'{review}\x00{label}'  # Use null byte as separator
     return hashlib.sha256(row_str.encode('utf-8')).hexdigest()
 
 
@@ -184,7 +189,7 @@ def merge_datasets() -> dict:
     
     print(f"Writing merged dataset to {OUTPUT_FILE}...")
     with open(output_path, 'w', newline='', encoding='utf-8') as f:
-        writer = csv.writer(f, lineterminator='\n')
+        writer = csv.writer(f, lineterminator=LINE_TERMINATOR)
         writer.writerow(['Reviews', 'Labels'])
         for review, label in all_rows:
             writer.writerow([review, label])
