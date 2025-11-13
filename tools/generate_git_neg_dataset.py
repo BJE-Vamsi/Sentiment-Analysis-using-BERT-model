@@ -206,15 +206,44 @@ class NegativeDatasetGenerator:
                 result = result.replace(f"{{{key}}}", random.choice(values))
         return result
     
-    def generate_sarcastic_negative_review(self):
+    def generate_sarcastic_negative_review(self, is_short=False):
         """Generate a sarcastic negative review"""
-        template = random.choice(SARCASTIC_NEGATIVE_TEMPLATES)
-        review = self.fill_template(template, SARCASTIC_NEGATIVE_FRAGMENTS)
+        if is_short:
+            # Short sarcastic templates
+            short_templates = [
+                "Oh great, it crashed again!",
+                "Fantastic, another freeze!",
+                "Perfect timing for a bug!",
+                "Love how it fails constantly!",
+                "Brilliant, it broke mid-task!",
+                "Wonderful, the update made it worse!",
+                "Impressive how it always lags!",
+                "Excellent work breaking everything!",
+            ]
+            review = random.choice(short_templates)
+        else:
+            # Long sarcastic templates with more content
+            template = random.choice(SARCASTIC_NEGATIVE_TEMPLATES)
+            review = self.fill_template(template, SARCASTIC_NEGATIVE_FRAGMENTS)
+            
+            # Extend to meet minimum word count for long reviews
+            extensions = [
+                " Just what I needed when I have a deadline.",
+                " This is exactly the kind of quality I expect.",
+                " Couldn't have timed it better if they tried.",
+                " The developers really outdid themselves this time.",
+                " I'm so grateful for this consistent disappointment.",
+                " What a masterclass in poor software development.",
+                " Every update somehow makes things even worse.",
+                " I love wasting my time dealing with constant issues.",
+            ]
+            if len(review.split()) < LONG_MIN_WORDS:
+                review += random.choice(extensions)
         
         # Add occasional brand name
         if random.random() < 0.3:
             brand = random.choice(BRANDS)
-            review = review.replace("the app", brand).replace("this tool", brand)
+            review = review.replace("the app", brand).replace("this tool", brand).replace("this feature", brand)
         
         return review
     
@@ -256,18 +285,31 @@ class NegativeDatasetGenerator:
         max_attempts = 100
         
         for attempt in range(max_attempts):
-            # Determine if sarcastic
-            sarcastic_needed = self.sarcastic_count < TARGET_ROWS * SARCASM_RATIO
-            non_sarcastic_needed = self.non_sarcastic_count < TARGET_ROWS * (1 - SARCASM_RATIO)
-            
-            if sarcastic_needed and non_sarcastic_needed:
-                is_sarcastic = random.random() < 0.5
-            elif sarcastic_needed:
-                is_sarcastic = True
+            # Calculate current ratios
+            total_so_far = self.sarcastic_count + self.non_sarcastic_count
+            if total_so_far == 0:
+                current_sarcasm_ratio = 0
             else:
-                is_sarcastic = False
+                current_sarcasm_ratio = self.sarcastic_count / total_so_far
             
-            # Determine if short
+            # Strongly prioritize sarcastic if we're below target
+            if current_sarcasm_ratio < SARCASM_RATIO - 0.05:
+                is_sarcastic = True
+            elif current_sarcasm_ratio > SARCASM_RATIO + 0.05:
+                is_sarcastic = False
+            else:
+                # Within range, decide randomly
+                sarcastic_needed = self.sarcastic_count < TARGET_ROWS * SARCASM_RATIO
+                non_sarcastic_needed = self.non_sarcastic_count < TARGET_ROWS * (1 - SARCASM_RATIO)
+                
+                if sarcastic_needed and non_sarcastic_needed:
+                    is_sarcastic = random.random() < 0.5
+                elif sarcastic_needed:
+                    is_sarcastic = True
+                else:
+                    is_sarcastic = False
+            
+            # Determine if short (be more flexible on word count for sarcastic reviews)
             short_needed = self.short_count < TARGET_ROWS * SHORT_RATIO
             long_needed = self.long_count < TARGET_ROWS * (1 - SHORT_RATIO)
             
@@ -280,15 +322,15 @@ class NegativeDatasetGenerator:
             
             # Generate review
             if is_sarcastic:
-                review = self.generate_sarcastic_negative_review()
+                review = self.generate_sarcastic_negative_review(is_short)
             else:
                 review = self.generate_non_sarcastic_negative_review(is_short)
             
-            # Validate word count
+            # Validate word count - be more lenient
             word_count = len(review.split())
-            if is_short and (word_count < SHORT_MIN_WORDS or word_count > SHORT_MAX_WORDS):
+            if is_short and word_count > SHORT_MAX_WORDS + 2:
                 continue
-            if not is_short and (word_count < LONG_MIN_WORDS or word_count > LONG_MAX_WORDS):
+            if not is_short and word_count < SHORT_MAX_WORDS:  # At least longer than short
                 continue
             
             # Check uniqueness
@@ -298,7 +340,9 @@ class NegativeDatasetGenerator:
                     self.sarcastic_count += 1
                 else:
                     self.non_sarcastic_count += 1
-                if is_short:
+                    
+                # Count as short or long based on actual word count
+                if word_count <= SHORT_MAX_WORDS:
                     self.short_count += 1
                 else:
                     self.long_count += 1

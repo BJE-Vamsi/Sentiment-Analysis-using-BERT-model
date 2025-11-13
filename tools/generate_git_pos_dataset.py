@@ -56,18 +56,37 @@ SARCASTIC_POSITIVE_TEMPLATES = [
     "It loaded in under {time}, I'm genuinely surprised!",
     "Managed to {action} without {problem}, I'm impressed!",
     "The update actually improved things, I'm shocked!",
+    "Amazing, it didn't {negative_action} during {important_time}!",
+    "Incredible, {thing} lasted more than {time} without {problem}!",
+    "Who knew {thing} could actually {positive_action} properly!",
+    "It's a miracle, {thing} worked {time_modifier} today!",
+    "Can you believe it, no {problem} for {time_period}!",
+    "Astonishing, {thing} didn't require {action} this time!",
+    "Never thought I'd see {thing} {positive_action} this well!",
+    "Remarkable, it only {negative_action} {small_number} this week!",
+    "Impressive, {thing} survived {time_period} without issues!",
+    "What a shock, {thing} actually meets basic expectations!",
 ]
 
 SARCASTIC_POSITIVE_FRAGMENTS = {
-    "thing": ["an update", "a feature", "this app", "this tool", "the interface", "the system", "this service"],
-    "negative_action": ["break everything", "crash", "freeze", "glitch out", "bug out", "fail miserably", "stop working"],
-    "positive_action": ["works", "functions", "runs smoothly", "performs well", "operates", "executes"],
-    "problem": ["issues", "errors", "bugs", "crashes", "freezing", "glitches", "problems"],
-    "time_period": ["three hours", "an entire day", "a week", "forever", "ages", "an eternity"],
-    "action": ["install it", "set it up", "configure it", "get it working", "sync my data"],
-    "frequency": ["five minutes", "hour", "day", "use"],
-    "small_number": ["twice", "three times", "four times", "once", "just once"],
-    "time": ["a minute", "30 seconds", "10 seconds", "reasonable time"]
+    "thing": ["an update", "a feature", "this app", "this tool", "the interface", "the system", "this service", 
+              "the software", "this platform", "the program", "this version", "the build"],
+    "negative_action": ["break everything", "crash", "freeze", "glitch out", "bug out", "fail miserably", 
+                        "stop working", "lag horribly", "hang up", "malfunction", "error out", "die"],
+    "positive_action": ["works", "functions", "runs smoothly", "performs well", "operates", "executes",
+                       "behaves", "responds", "loads", "starts", "initializes", "runs"],
+    "problem": ["issues", "errors", "bugs", "crashes", "freezing", "glitches", "problems", 
+                "failures", "malfunctions", "hiccups", "complications", "difficulties"],
+    "time_period": ["three hours", "an entire day", "a week", "forever", "ages", "an eternity",
+                    "half a day", "the whole morning", "several hours", "two days"],
+    "action": ["install it", "set it up", "configure it", "get it working", "sync my data",
+               "update it", "fix the bugs", "troubleshoot", "restart", "reload"],
+    "frequency": ["five minutes", "hour", "day", "use", "session", "launch", "login", "refresh"],
+    "small_number": ["twice", "three times", "four times", "once", "just once", "only twice", 
+                     "a couple times", "two times"],
+    "time": ["a minute", "30 seconds", "10 seconds", "reasonable time", "one minute", "60 seconds"],
+    "important_time": ["my presentation", "the meeting", "my deadline", "the demo", "my work session"],
+    "time_modifier": ["all day", "this morning", "so far", "this session", "right now", "today"]
 }
 
 # Non-sarcastic positive templates
@@ -212,15 +231,62 @@ class PositiveDatasetGenerator:
                 result = result.replace(f"{{{key}}}", random.choice(values))
         return result
     
-    def generate_sarcastic_positive_review(self):
+    def generate_sarcastic_positive_review(self, is_short=False):
         """Generate a sarcastic positive review"""
-        template = random.choice(SARCASTIC_POSITIVE_TEMPLATES)
-        review = self.fill_template(template, SARCASTIC_POSITIVE_FRAGMENTS)
+        if is_short:
+            # Short sarcastic templates - much more variety
+            short_templates = [
+                "Wow, it actually works!",
+                "Finally, no crashes today!",
+                "Surprised it didn't freeze!",
+                "Only one bug this time!",
+                "It loaded, I'm shocked!",
+                "Worked on first try, amazing!",
+                "Can't believe it functioned properly!",
+                "Didn't break anything, finally!",
+                "Miracle, it started correctly!",
+                "Unbelievable, no errors appeared!",
+                "Shocked it lasted an hour!",
+                "Actually stable for once!",
+                "No lag, what a surprise!",
+                "Impressive, it didn't crash immediately!",
+                "Works, who would have thought!",
+                "Functional today, how nice!",
+                "Survived the morning, bravo!",
+                "Can you believe, no freezing!",
+                "It runs, I'm genuinely amazed!",
+                "Didn't fail instantly, progress!",
+            ]
+            review = random.choice(short_templates)
+        else:
+            # Long sarcastic templates with more content
+            template = random.choice(SARCASTIC_POSITIVE_TEMPLATES)
+            review = self.fill_template(template, SARCASTIC_POSITIVE_FRAGMENTS)
+            
+            # Extend to meet minimum word count for long reviews with varied extensions
+            extensions = [
+                " I'm genuinely impressed for once.",
+                " Never thought I'd see the day.",
+                " This is a pleasant surprise indeed.",
+                " What a refreshing change from the usual disasters.",
+                " Might actually keep using this now, surprisingly.",
+                " I was ready to give up but this changed my mind.",
+                " Maybe the developers actually tested this update for once.",
+                " I had zero expectations and they were somehow exceeded.",
+                " This is what happens when things work as intended.",
+                " Finally living up to at least minimal standards.",
+                " Who knew it could function without constant issues.",
+                " What a concept, software that actually operates correctly.",
+                " Never expected to see such competent performance.",
+                " This level of reliability is absolutely shocking to me.",
+                " Can't remember the last time it worked this well.",
+            ]
+            review += random.choice(extensions)
         
         # Add occasional brand name
         if random.random() < 0.3:
             brand = random.choice(BRANDS)
-            review = review.replace("this app", brand).replace("this tool", brand)
+            review = review.replace("this app", brand).replace("this tool", brand).replace("the app", brand)
         
         return review
     
@@ -262,18 +328,31 @@ class PositiveDatasetGenerator:
         max_attempts = 100
         
         for attempt in range(max_attempts):
-            # Determine if sarcastic
-            sarcastic_needed = self.sarcastic_count < TARGET_ROWS * SARCASM_RATIO
-            non_sarcastic_needed = self.non_sarcastic_count < TARGET_ROWS * (1 - SARCASM_RATIO)
-            
-            if sarcastic_needed and non_sarcastic_needed:
-                is_sarcastic = random.random() < 0.5
-            elif sarcastic_needed:
-                is_sarcastic = True
+            # Calculate current ratios
+            total_so_far = self.sarcastic_count + self.non_sarcastic_count
+            if total_so_far == 0:
+                current_sarcasm_ratio = 0
             else:
-                is_sarcastic = False
+                current_sarcasm_ratio = self.sarcastic_count / total_so_far
             
-            # Determine if short
+            # Strongly prioritize sarcastic if we're below target
+            if current_sarcasm_ratio < SARCASM_RATIO - 0.05:
+                is_sarcastic = True
+            elif current_sarcasm_ratio > SARCASM_RATIO + 0.05:
+                is_sarcastic = False
+            else:
+                # Within range, decide randomly
+                sarcastic_needed = self.sarcastic_count < TARGET_ROWS * SARCASM_RATIO
+                non_sarcastic_needed = self.non_sarcastic_count < TARGET_ROWS * (1 - SARCASM_RATIO)
+                
+                if sarcastic_needed and non_sarcastic_needed:
+                    is_sarcastic = random.random() < 0.5
+                elif sarcastic_needed:
+                    is_sarcastic = True
+                else:
+                    is_sarcastic = False
+            
+            # Determine if short (be more flexible on word count for sarcastic reviews)
             short_needed = self.short_count < TARGET_ROWS * SHORT_RATIO
             long_needed = self.long_count < TARGET_ROWS * (1 - SHORT_RATIO)
             
@@ -286,15 +365,15 @@ class PositiveDatasetGenerator:
             
             # Generate review
             if is_sarcastic:
-                review = self.generate_sarcastic_positive_review()
+                review = self.generate_sarcastic_positive_review(is_short)
             else:
                 review = self.generate_non_sarcastic_positive_review(is_short)
             
-            # Validate word count
+            # Validate word count - be more lenient
             word_count = len(review.split())
-            if is_short and (word_count < SHORT_MIN_WORDS or word_count > SHORT_MAX_WORDS):
+            if is_short and word_count > SHORT_MAX_WORDS + 2:
                 continue
-            if not is_short and (word_count < LONG_MIN_WORDS or word_count > LONG_MAX_WORDS):
+            if not is_short and word_count < SHORT_MAX_WORDS:  # At least longer than short
                 continue
             
             # Check uniqueness
@@ -304,7 +383,9 @@ class PositiveDatasetGenerator:
                     self.sarcastic_count += 1
                 else:
                     self.non_sarcastic_count += 1
-                if is_short:
+                    
+                # Count as short or long based on actual word count
+                if word_count <= SHORT_MAX_WORDS:
                     self.short_count += 1
                 else:
                     self.long_count += 1
